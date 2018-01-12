@@ -6,17 +6,9 @@
     <div class="panel-body">
       <Row type="flex" justify="space-between" class="control">
         <div class="table-style">
-          <h3>Stripe</h3>
-          <i-switch v-model="showStripe" style="margin: 0 30px 0 10px"></i-switch>
-          <h3>Size</h3>
-          <Radio-group v-model="tableSize" type="button" style="margin-left: 10px">
-            <Radio label="large">Large</Radio>
-            <Radio label="default">Default</Radio>
-            <Radio label="small">Small</Radio>
-          </Radio-group>
         </div>
         <div class="search-bar">
-          <Input placeholder="Please enter ..." v-model="keyword" style="width: 300px"></Input>
+          <Input placeholder="Please enter ..." v-model="keyword" style="width: 200px"></Input>
           <Button type="ghost" @click="search" icon="search"></Button>
         </div>
       </Row>
@@ -24,7 +16,7 @@
           <Button @click="modalAdd = true" icon="plus-round">添加</Button>
           <Button  :disabled="deleteDisabled" @click="modalDelete = true" icon="trash-a">删除</Button>
       </div>
-      <Table :stripe="showStripe" :size="tableSize" :columns="showColumns" :data="dataShow" @on-selection-change="selectChange"></Table>
+      <Table :columns="showColumns" :data="dataShow" @on-selection-change="selectChange"></Table>
       <Row type="flex" justify="space-between" class="footer">
         <div class="info-bar">
           Show<Input-number class="input-number" v-model="showNum" :max="data.length" :min="1" @on-change=" updateDataShow ">{{ showNum }}</Input-number>/ Page
@@ -91,8 +83,6 @@
         deleteDisabled: true,
         dataShow: [],
         showNum: 10,
-        showStripe: false,
-        tableSize: 'default',
         currentPage: 1,
         keyword: '',
         modalEdit: false,

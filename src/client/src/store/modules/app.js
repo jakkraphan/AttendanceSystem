@@ -1,4 +1,5 @@
 import {otherRouter, appRouter} from '@/router/router';
+import Cookies from 'js-cookie';
 
 const app = {
     state: {
@@ -10,7 +11,15 @@ const app = {
     },
     mutations: {
         updateMenulist (state) {
-            state.menuList = appRouter;
+            const mode = Cookies.get('mode');
+            const mAccess = mode !== undefined ? parseInt(mode) : 0;
+            let menuList = [];
+            appRouter.forEach(item => {
+                if (item.access === undefined || mAccess >= item.access) {
+                    menuList.push(item);
+                }
+            });
+            state.menuList = menuList;
         }
     }
 };

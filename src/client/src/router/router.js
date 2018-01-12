@@ -114,6 +114,7 @@ export const appRouter = [
         icon: 'person-stalker',
         title: 'Employee',
         name: 'employee',
+        access: 2,
         component: Main,
         children: [
             {
@@ -129,6 +130,7 @@ export const appRouter = [
         icon: 'ios-book',
         title: 'Log',
         name: 'log',
+        access: 4,
         component: Main,
         children: [
             {

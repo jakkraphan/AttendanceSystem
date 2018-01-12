@@ -1,11 +1,15 @@
 import Vue from 'vue';
 import iView from 'iview';
+import VueSocketio from 'vue-socket.io';
 import {router} from './router/index';
 import store from './store';
 import App from './app.vue';
 import 'iview/dist/styles/iview.css';
 
+const baseUri = 'http://127.0.0.1:8080';
+
 Vue.use(iView);
+//Vue.use(VueSocketio, baseUri + '/query', {'reconnect': false});
 
 new Vue({
     el: '#app',

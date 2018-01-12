@@ -2,33 +2,55 @@
      <div>
         <Card>
             <p slot="title">
-                <Icon type="person"></Icon>
-                个人信息
+                <span v-if="showSwitch"><Icon type="ionic"></Icon> 系统设置 </span>
+                <span v-else><Icon type="person"></Icon> 个人设置 </span>         
+                <span v-if="this.type >= 4">
+                    <i-switch v-model="showSwitch" size="small"  style="margin: 0 10px 0 10px"></i-switch> 切换
+                </span>
             </p>
-            <div>
+            <div v-if="showSwitch">
+                <Form
+                    :label-width="100"
+                    label-positon="right">
+                    <FormItem label="选择日期：">
+                        <Date-picker type="date" v-model="date.date" placeholder="选择日期" style="width: 200px"></Date-picker>
+                    </FormItem>
+                    <FormItem label="签到时间：">
+                        <Time-picker type="time" v-model="date.begintime" placeholder="选择时间" style="width: 200px"></Time-picker>
+                    </FormItem>
+                    <FormItem label="签退时间：">
+                        <Time-picker type="time" v-model="date.endtime" placeholder="选择时间" style="width: 200px"></Time-picker>
+                    </FormItem>
+                    <FormItem label="确认保存：">
+                        <Button type="primary" style="width: 99px;" :loading="save_loading" @click="saveTime">保存</Button>
+                        <Button type="ghost" style="width: 99px;" @click="cancelTime">取消</Button>                        
+                    </FormItem>
+                </Form>
+            </div>
+            <div v-else>
                 <Form 
                     ref="user"
                     :label-width="100" 
                     label-position="right">
                      <FormItem label="工号：">
-                        <span>{{ user.user_id }}</span>
+                        <span>{{ user_id }}</span>
                     </FormItem>
                     <FormItem label="姓名：" prop="name">
                         <div style="display:inline-block;width:300px;">
-                            <Input v-model="user.name" ></Input>
+                            <Input v-model="name"></Input>
                         </div>
                     </FormItem>
                     <FormItem label="个人信息：">
-                        <Input v-model="user.information" type="textarea" :autosize="{minRows: 8,maxRows: 10}"></Input>
+                        <Input v-model="information" type="textarea" :autosize="{minRows: 8,maxRows: 10}"></Input>
                     </FormItem>
                     <FormItem label="工作部门：">
-                        <span>{{ user.department }}</span>
+                        <span>{{ this.departments[this.department] }}</span>
                     </FormItem>
                     <FormItem label="登录密码：">
                         <Button type="text" size="small" @click="showEditPassword">修改密码</Button>
                     </FormItem>
                     <div>
-                        <Button type="text" style="width: 100px;" @click="cancelEditUserInfor">取消</Button>
+                        <Button type="text" style="width: 100px;" @click="cancelEditUserInfo">取消</Button>
                         <Button type="primary" style="width: 100px;" :loading="save_loading" @click="saveEdit">保存</Button>
                     </div>
                 </Form>
@@ -39,13 +61,13 @@
             <h3 slot="header" style="color:#2D8CF0">修改密码</h3>
             <Form ref="editPasswordForm" :model="editPasswordForm" :label-width="100" label-position="right" :rules="passwordValidate">
                 <FormItem label="原密码" prop="oldPass" :error="oldPassError">
-                    <Input v-model="editPasswordForm.oldPass" placeholder="请输入现在使用的密码" ></Input>
+                    <Input v-model="editPasswordForm.oldPass" placeholder="请输入现在使用的密码"></Input>
                 </FormItem>
                 <FormItem label="新密码" prop="newPass">
-                    <Input v-model="editPasswordForm.newPass" placeholder="请输入新密码，至少6位字符" ></Input>
+                    <Input v-model="editPasswordForm.newPass" placeholder="请输入新密码，至少6位字符"></Input>
                 </FormItem>
                 <FormItem label="确认新密码" prop="rePass">
-                    <Input v-model="editPasswordForm.rePass" placeholder="请再次输入新密码" ></Input>
+                    <Input v-model="editPasswordForm.rePass" placeholder="请再次输入新密码"></Input>
                 </FormItem>
             </Form>
             <div slot="footer">
@@ -57,6 +79,8 @@
 </template>
 
 <<script>
+    import { mapGetters } from 'vuex';
+    
     export default {
         name: 'setting',
         data () {
@@ -68,15 +92,19 @@
                 }
             };
             return {
-                user: {
-                    user_id: 233333333,
-                    name: '比利',
-                    information: 'ass ♂ we ♂ can',
-                    department: '哲♂学♂部'
-                },
+                showSwitch: false,
                 save_loading: false,
                 editPasswordModal: false, // 修改密码模态框显示
                 savePassLoading: false,
+                date: {
+                    date: '',
+                    begintime: '',
+                    endtime: ''
+                },
+                oldname: this.$store.getters.name,
+                oldinfo: this.$store.getters.information,
+                name: this.$store.getters.name,
+                information: this.$store.getters.information,
                 oldPassError: '',
                 editPasswordForm: {
                     oldPass: '',
@@ -107,52 +135,59 @@
                 this.editPasswordModal = false;
             },
             saveEditPass () {
+                const that = this;
                 this.$refs['editPasswordForm'].validate((valid) => {
                     if (valid) {
-                        this.savePassLoading = true;
-                        // you can write ajax request here
+                        that.savePassLoading = true;
+                        that.update({
+                            'password': that.editPasswordForm.newPass
+                        });
                     }
                 });
+            },
+            saveEdit () {
+                this.update({
+                    'name': this.name,
+                    'information': this.information
+                });
+            },
+            cancelEditUserInfo () {
+                this.name = this.oldname;
+                this.information = this.oldinfo;
+            },
+            cancelTime () {
+                this.date.date = '';
+                this.date.begintime = '';
+                this.date.endtime = '';
+            },
+            update (data) {
+                const obj = new Object();
+                obj['table'] = 'user';
+                const args = new Object();
+                args['user_id'] = this.id;
+                for(i in data) {
+                    args[i] = data[i];
+                }
+                obj['args'] = args;
+                this.$socket.emit('', obj, function (ret) {
+                    if (true) {
+                        for(i in data) {
+                            this.$store.commit('set_'+i, data[i]);                            
+                        }
+                    } else {
+
+                    }
+                    this.savePassLoading = false;
+                });
             }
+        },
+        computed: {
+            ...mapGetters([
+                'user_id',
+                'type',
+                'department',
+                'departments'
+            ])
         }
     };
 </script>
-
-<style scoped>
-    .own-space-btn-box {
-  margin-bottom: 10px;
-}
-.own-space-btn-box button {
-  padding-left: 0;
-}
-.own-space-btn-box button span {
-  color: #2D8CF0;
-  transition: all .2s;
-}
-.own-space-btn-box button span:hover {
-  color: #0C25F1;
-  transition: all .2s;
-}
-.own-space-tra {
-  width: 10px;
-  height: 10px;
-  transform: rotate(45deg);
-  position: absolute;
-  top: 50%;
-  margin-top: -6px;
-  left: -3px;
-  box-shadow: 0 0 2px 3px rgba(0,0,0,0.1);
-  background-color: white;
-  z-index: 100;
-}
-.own-space-input-identifycode-con {
-  position: absolute;
-  width: 200px;
-  height: 100px;
-  right: -220px;
-  top: 50%;
-  margin-top: -50px;
-  border-radius: 4px;
-  box-shadow: 0 0 2px 3px rgba(0,0,0,0.1);
-}
-</style>
