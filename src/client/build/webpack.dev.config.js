@@ -13,6 +13,10 @@ fs.open('./env.js', 'w', function(err, fd) {
 });
 
 module.exports = merge(webpackBaseConfig, {
+    devServer: {
+        // 有contentBase，hot 等参数，可以自己查询
+       port:8081
+    },
     devtool: '#source-map',
     output: {
         publicPath: '/dist/',
@@ -29,7 +33,7 @@ module.exports = merge(webpackBaseConfig, {
             minChunks: Infinity
         }),
         new HtmlWebpackPlugin({
-            title: 'iView admin v' + package.version,
+            title: 'AttendanceSystem' + package.version,
             filename: '../index.html',
             template: './src/template/index.ejs',
             inject: false

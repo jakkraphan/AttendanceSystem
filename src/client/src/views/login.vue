@@ -65,7 +65,8 @@ export default {
                 password: [
                     { required: true, message: '密码不能为空', trigger: 'blur' }
                 ]
-            }
+            },
+            logins: ['e_login', 'm_login', 'p_login', 's_login']
         };
     },
     methods: {
@@ -77,33 +78,42 @@ export default {
             });
         },
         login () {
-            const obj = {};
-            if (this.form.type === 1) {
-                obj['table'] = 'employee';
-            } else if (this.form.type === 2) {
-                obj['table'] = 'supervisor';
-            } else if (this.form.type === 3) {
-                obj['table'] = 'personnel_manager';
-            } else if (this.form.type === 4) {
-                obj['table'] = 'system_manager';
-            }
-
+            const that = this;
+            const methodName = this.logins[this.form.type - 1];
             const args = {};
-            args.used_id = this.form.userId;
+
+            args.user_id = this.form.userId;
             args.password = this.form.password;
-            obj.args = args;
-                Cookies.set('user', this.form.userId);
-                Cookies.set('mode', this.form.type);
-                this.$store.commit('set_user_id', this.form.userId);
-                this.$store.commit('set_name', '比利·海灵顿');
-                this.$store.commit('set_password', this.form.password);
-                this.$store.commit('set_type', this.form.type);
-                this.$store.commit('set_information', 'Ass we can');
-                this.$store.commit('set_department', 1);
-                this.$store.commit('updateMenulist');
-                this.$router.push({
-                    name: 'home_index'
-                });
+            this.$socket.emit(methodName, args, function (status) {
+                if (status !== undefined) {
+                    Cookies.set('user', that.form.userId);
+                    Cookies.set('mode', that.form.type);
+                    that.$store.commit('updateMenulist');
+                    that.$store.commit('set_all', status);
+                    that.fetchDepartments();
+                    that.$router.push({
+                        name: 'home_index'
+                    });
+                } else {
+                    that.$Message.error('登录失败');
+                }
+            });
+        },
+        fetchDepartments () {
+            const that = this;
+            const args = {
+                'd_id': -1,
+                'd_name': -1,
+                'order': [['d_id'], ['ASC']]
+            };
+
+            this.$socket.emit('d_search', args, function (...args) {
+                if (args !== undefined) {
+                    that.$store.commit('set_departments', args);
+                } else {
+                    that.$Message.error('部门信息获取失败');
+                }
+            });
         }
     }
 };

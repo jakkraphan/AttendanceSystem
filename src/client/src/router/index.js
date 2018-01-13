@@ -22,13 +22,14 @@ router.beforeEach((to, from, next) => {
         next({
             name: 'login'
         });
-    } else if (Cookies.get('user') && to.name === 'login') { // 判断是否已经登录且前往的是登录页
-        Util.title();
-        next({
-            name: 'home_index'
-        });
     } else {
-        next();
+        if (Cookies.get('user') && to.name === 'login') { // 判断是否已经登录且前往的是登录页
+            next({
+                name: 'home_index'
+            });
+        } else {
+            next();
+        }
     }
 });
 

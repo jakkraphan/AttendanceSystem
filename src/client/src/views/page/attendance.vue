@@ -57,7 +57,7 @@
             ok-text="OK"
             cancel-text="Cancel"
             @on-ok="editOk">
-            <Form :label-width="80">
+            <Form :label-width="80" ref="dataEdit" :model="dataEdit">
                 <Form-item label="员工工号">
                     <Input v-model="dataEdit['user_id']"></Input>
                 </Form-item>
@@ -84,7 +84,7 @@
             ok-text="OK"
             cancel-text="Cancel"
             @on-ok="editOk">
-            <Form :label-width="80">
+            <Form :label-width="80" ref="dataAdd" :model="dataAdd">
                <Form-item label="员工工号">
                     <Input v-model="dataAdd['user_id']"></Input>
                 </Form-item>
@@ -187,41 +187,27 @@ export default {
         add: function () {
             this.modalAdd = true;
         },
-        editOk: function (data) {
-            let keys = [];
-            const key = {};
-            const args = {};
+        editOk: function () {
+            const that = this;
             const obj = {
-                key: key,
-                args: args
+                'table': 'attendance_table',
+                'log': 'edit_status',
+                'key': {
+                    'user_id': this.dataEdit['user_id'],
+                    'm_date': this.dataEdit['date']
+                },
+                'args': {
+                    'check_in_time': this.dataEdit['begintime'],
+                    'check_out_time': this.dataEdit['endtime'],
+                    'status': this.dataEdit['status']
+                }
             };
-            if (this.showSwitch) {
-                obj['table'] = 'department';
-                key['department_number'] = data['department_number'];
-                keys = ['department_name', 'department_detail'];
-            } else {
-                obj['table'] = 'user';
-                key['user_id'] = data['user_id'];
-                keys = ['name', 'password', 'information', 'department'];
-            }
-            for (let i in keys) {
-                args[i] = this.dataEdit[i];
-            }
-            this.$socket.emit('', obj, function (status) {
+            this.$socket.emit('update', obj, function (status) {
                 if (status) {
-                    let need2change;
-                    let pkey;
-                    if (this.showSwitch) {
-                        need2change = this.departmentData;
-                        pkey = 'department_number';
-                    } else {
-                        need2change = this.userData;
-                        pkey = 'user_id';
-                    }
-                    need2change.forEach(elem => {
-                        if (elem[pkey] === data[pkey]) {
-                            for (let i in data) {
-                                elem[i] = data[i];
+                    that.allData.forEach(elem => {
+                        if (elem['user_id'] === that.dataEdit['user_id'] && elem['date'] === that.dataEdit['']) {
+                            for (let i in that.dataEdit) {
+                                elem[i] = that.dataEdit[i];
                             }
                         }
                     });
@@ -230,60 +216,43 @@ export default {
                 }
             });
         },
-        addOk: function (data) {
-            let keys;
-            let data2add;
-            const args = {};
+        addOk: function () {
+            const that = this;
             const obj = {
-                args: args
+                'table': 'attendance_table',
+                'args': {
+                    'user_id': this.dataAdd['user_id'],
+                    'm_date': this.dataAdd['date'],
+                    'check_in_time': this.dataAdd['begintime'],
+                    'check_out_time': this.dataAdd['endtime'],
+                    'status': this.dataAdd['status']
+                }
             };
-            if (this.showSwitch) {
-                obj['table'] = 'department';
-                keys = ['department_name', 'department_detail'];
-                data2add = this.departmentDataAdd;
-            } else {
-                obj['table'] = 'user';
-                keys = ['name', 'password', 'information', 'department'];
-                data2add = this.userDataAdd;
-            }
-            for (let i in keys) {
-                args[i] = data2add[i];
-            }
-            this.$socket.emit('', obj, function (ret) {
-                if (ret) {
-                    if (this.showSwitch) {
-                        this.userData.unshift(args);
-                    } else {
-                        this.departmentData.unshift(args);
-                    }
+            this.$socket.emit('insert', obj, function (status) {
+                if (status) {
+                    that.allData.unshift(this.dataAdd);
                 } else {
                     this.$Message.error('插入失败');
                 }
             });
         },
-        deleteOk: function (data) {
-            const obj = {};
-            let pkey;
-            if (this.showSwitch) {
-                obj['table'] = 'department';
-                pkey = 'department_number';
-            } else {
-                obj['table'] = 'user';
-                pkey = 'user_id';
-            }
-            for (let item in data) {
+        deleteOk: function () {
+            const that = this;
+            const obj = {
+                'table': 'attendance_table',
+                'log': 'del_attendance',
+                'key': {}
+            };
+            for (let item in this.dataDelete) {
                 const key = {};
-                key[pkey] = item[pkey];
+                key['user_id'] = item['user_id'];
+                key['m_date'] = item['date'];
                 obj['key'] = key;
-                this.$socket.emit('', obj, function (status) {
+                this.$socket.emit('delete', obj, function (status) {
                     if (status) {
-                        if (this.showSwitch) {
-                            this.departmentData = this.departmentData.filter(i => i['number'] !== item['number']);
-                        } else {
-                            this.userData = this.userData.filter(i => i['number'] !== item['number']);
-                        }
+                        that.allData = that.allData.filter(i => i['number'] !== item['number']);
                     } else {
-                        this.$Message.error('删除失败');
+                        that.$Message.error('删除失败');
                     }
                 });
             }
@@ -308,7 +277,38 @@ export default {
             }
         },
         deepSearch: function () {
-            
+            const obj = {
+                'status': -1,
+                'order': [['user_id'], ['ASC']]
+            };
+            if (this.search_department !== '') {
+                obj['d_id'] = parseInt(this.search_department);
+            } else if (this.type >= 3) {
+                obj['d_id'] = -1;
+            } else {
+                obj['d_id'] = this.department;
+            }
+            if (this.search_name !== '') {
+                obj['name'] = this.search_name;
+            } else {
+                obj['name'] = -1;
+            }
+            if (this.search_id !== '') {
+                obj['user_id'] = parseInt(this.search_id);
+            } else {
+                obj['user_id'] = -1;
+            }
+            if (this.begintime !== '') {
+                obj['start'] = this.begintime;
+            } else {
+                obj['start'] = -1;
+            }
+            if (this.endtime !== '') {
+                obj['end'] = this.endtime;
+            } else {
+                obj['end'] = -1;
+            }
+            this.fetchData(obj);
         },
         search: function () {
             let that = this;
@@ -379,6 +379,30 @@ export default {
                 }
             });
             return returnValue;
+        },
+        fetchData: function (obj, isSelf) {
+            const that = this;
+            this.$socket.emit('attendance_search', obj, function (...args) {
+                if (args !== undefined) {
+                    let data2push = [];
+                    for (let i of args) {
+                        data2push.push({
+                            'used_id': i[0],
+                            'date': i[1],
+                            'begintime': i[2],
+                            'endtime': i[3],
+                            'status': i[4]
+                        });
+                    }
+                    if (isSelf) {
+                        that.selfData = data2push;
+                    } else {
+                        that.allData = data2push;
+                    }
+                } else {
+                    that.$Message.error('失败');
+                }
+            });
         }
     },
     computed: {
@@ -403,6 +427,7 @@ export default {
         ...mapGetters([
             'user_id',
             'type',
+            'department',
             'departments'
         ])
     },
@@ -422,6 +447,19 @@ export default {
         }
     },
     mounted: function () {
+        const obj = {
+            'name': -1,
+            'start': -1,
+            'end': -1,
+            'status': -1,
+            'order': [['user_id'], ['ASC']]
+        };
+        if (this.type >= 3) {
+            obj['d_id'] = -1;
+        } else {
+            obj['d_id'] = this.department;
+        }
+        this.fetchData(obj);
         this.showSelfData = this.selfData.slice(0, this.showNum);
         this.showAllData = this.allData.slice(0, this.showNum);
     }

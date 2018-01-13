@@ -1,9 +1,11 @@
 import axios from 'axios';
+import Cookies from 'js-cookie';
 import env from '../../build/env';
 
 let util = {
 
 };
+
 util.title = function (title) {
     title = title || 'AttendanceSystem';
     window.document.title = title;
@@ -249,6 +251,10 @@ util.toDefaultPage = function (routers, name, route, next) {
 util.fullscreenEvent = function (vm) {
     // 权限菜单过滤相关
     vm.$store.commit('updateMenulist');
+};
+
+util.checkStatus = function (userId) {
+    return Cookies.get('user') !== userId;
 };
 
 export default util;

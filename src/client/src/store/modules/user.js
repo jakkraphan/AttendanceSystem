@@ -26,11 +26,18 @@ const user = {
         set_type (state, type) {
             state.type = type;
         },
-        set_information (state, information) {
+        set_info (state, information) {
             state.information = information;
         },
         set_department (state, department) {
             state.department = department;
+        },
+        set_all (state, data) {
+            state.user_id = data[0];
+            state.department = data[1];
+            state.password = data[2];
+            state.name = data[3];
+            state.information = data[4];
         }
     }
 };

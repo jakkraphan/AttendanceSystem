@@ -40,7 +40,7 @@
             ok-text="OK"
             cancel-text="Cancel"
             @on-ok="editOk">
-            <Form :label-width="80">
+            <Form :label-width="80" :ref="dataEdit" :model="dataEdit">
                 <Form-item label="开始日期">
                     <DatePicker v-model="dataEdit['begindate']" type="date" placeholder="请选择开始日期" label="开始日期"></DatePicker>
                 </Form-item>
@@ -77,7 +77,7 @@
             ok-text="OK"
             cancel-text="Cancel"
             @on-ok="replyOk">
-            <Form :label-width="80">
+            <Form :label-width="80" ref="dataEdit" :model="dataEdit">
                 <Form-item label="拒绝理由">
                     <Input v-model="dataEdit['reply']" type="textarea" placeholder="请输入拒绝理由" label="拒绝理由"></Input>
                 </Form-item>
@@ -89,7 +89,7 @@
             ok-text="OK"
             cancel-text="Cancel"
             @on-ok="addOk">
-            <Form :label-width="80">
+            <Form :label-width="80" ref="dataAdd" :model="dataAdd">
                 <Form-item label="员工工号" v-if="this.type === 4">
                     <Input v-model="dataAdd['user_id']" placeholder="请输入工号" label="请假理由"></Input>                
                 </Form-item>
@@ -416,7 +416,35 @@ export default {
             });
         },
         deepSearch: function () {
-            
+            const obj = {
+                'table': 'leave_table',
+                'user_id': -1,
+                'name': -1,
+                'start': -1,
+                'end': -1,
+                'type': -1,
+                'days': {
+                    'min': -1,
+                    'max': -1
+                },
+                'order': [['user_id'], ['ASC']]
+            };
+            if (this.begindate !== '') {
+                obj['start'] = this.begindate;
+            }
+            if (this.enddate !== '') {
+                obj['end'] = this.enddate;
+            }
+            if (this.search_name !== '') {
+                obj['name'] = this.search_name;
+            }
+            if (this.search_id !== '') {
+                obj['user_id'] = this.search_id;
+            }
+            if (this.search_department !== '') {
+                obj['d_id'] = this.search_department;
+            }
+            this.fetchData(obj);
         },
         selectChange: function (data) {
             this.dataDelete = data;
@@ -509,12 +537,32 @@ export default {
                 }
             });
             return returnValue;
+        },
+        fetchData: function (obj) {
+            const that = this;
+            this.$socket.emit('tl_search', obj, function (...args) {
+                if (args !== undefined) {
+                    that.leaveData = [];
+                    for (let i of args) {
+                        that.leaveData.push({
+                            'user_id': i[0],
+                            'date': i[1],
+                            'begintime': i[2],
+                            'endtime': i[3],
+                            'status': i[4]
+                        });
+                    }
+                } else {
+                    that.$Message.error('查询失败');
+                }
+            });
         }
     },
     computed: {
         ...mapGetters([
             'user_id',
             'type',
+            'department',
             'departments'
         ]),
         showColumns: function () {
@@ -549,6 +597,44 @@ export default {
         }
     },
     mounted: function () {
+        const that = this;
+        const obj = {
+            'table': 'leave_table',
+            'user_id': -1,
+            'name': -1,
+            'start': -1,
+            'end': -1,
+            'type': -1,
+            'days': {
+                'min': -1,
+                'max': -1
+            },
+            'order': [['user_id'], ['ASC']]
+        };
+        if (this.type >= 3) {
+            obj['d_id'] = -1;
+            obj['user_id'] = -1;
+        } else if (this.type >= 2) {
+            obj['d_id'] = this.department;
+            obj['user_id'] = -1;
+        } else {
+            obj['d_id'] = this.department;
+            obj['user_id'] = this.this.user_id;
+        }
+
+        this.$socket.emit('tl_search', obj, function (...args) {
+            if (args !== undefined) {
+                for (let i of args) {
+                    const item = {};
+                    for (let j = 0; j < i.length; j++) {
+                        item[this.keys[j]] = i[j];
+                    }
+                    that.leaveData.push(item);
+                }
+            } else {
+                that.$Message.error('数据获取失败');
+            }
+        });
         this.showData = this.leaveData.slice(0, this.showNum);
     }
 };

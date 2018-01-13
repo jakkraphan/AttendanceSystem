@@ -128,6 +128,14 @@
             };
         },
         methods: {
+            formatDate (date) {
+                const y = date.getFullYear();
+                let m = date.getMonth() + 1;
+                m = m < 10 ? '0' + m : m;
+                let d = date.getDate();
+                d = d < 10 ? ('0' + d) : d;
+                return y + '-' + m + '-' + d;
+            },
             showEditPassword () {
                 this.editPasswordModal = true;
             },
@@ -148,12 +156,14 @@
             saveEdit () {
                 this.update({
                     'name': this.name,
-                    'information': this.information
+                    'info': this.information
                 });
             },
             cancelEditUserInfo () {
                 this.name = this.oldname;
                 this.information = this.oldinfo;
+            },
+            saveTime () {
             },
             cancelTime () {
                 this.date.date = '';
@@ -161,23 +171,18 @@
                 this.date.endtime = '';
             },
             update (data) {
-                const obj = new Object();
-                obj['table'] = 'user';
-                const args = new Object();
-                args['user_id'] = this.id;
-                for(i in data) {
-                    args[i] = data[i];
-                }
-                obj['args'] = args;
-                this.$socket.emit('', obj, function (ret) {
-                    if (true) {
-                        for(i in data) {
-                            this.$store.commit('set_'+i, data[i]);                            
+                const that = this;
+                this.$socket.emit('change_info', data, function (status) {
+                    if (status) {
+                        for (let i in data) {
+                            that.$store.commit('set_' + i, data[i]);
                         }
+                        that.savePassLoading = false;
+                        that.editPasswordModal = false;
+                        that.$Message.success('更改成功');
                     } else {
-
+                        that.$Message.error('更改出错');
                     }
-                    this.savePassLoading = false;
                 });
             }
         },

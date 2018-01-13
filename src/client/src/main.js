@@ -9,7 +9,7 @@ import 'iview/dist/styles/iview.css';
 const baseUri = 'http://127.0.0.1:8080';
 
 Vue.use(iView);
-//Vue.use(VueSocketio, baseUri + '/query', {'reconnect': false});
+Vue.use(VueSocketio, baseUri + '/db', {'reconnect': false});
 
 new Vue({
     el: '#app',

@@ -8,13 +8,20 @@ Vue.use(Vuex);
 
 const departments = {
     state: {
-        departments: {1: '哲学部', 2: '摔跤部'}
+        departments: {1: '系统管理', 2: '人事管理'}
     },
     mutations: {
         add (state, key, value) {
             state.departments[key] = value;
         },
         remove (state, key) {
+            delete state.departments[key];
+        },
+        set_departments (state, data) {
+            const obj = state.departments;
+            for (let i of data) {
+                obj[i[0]] = i[1];
+            }
         }
     }
 };
