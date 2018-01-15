@@ -107,12 +107,11 @@ export default {
                     l_time: Util.formatDateTime(new Date(this.dataEdit['datetime']))
                 },
                 args: {
-                    info: this.dataEdit['info']
+                    info: this.formatString(this.dataEdit['info'])
                 }
             };
             this.$socket.emit('update', obj, function (status) {
                 if (status) {
-                    console.log(status)
                     that.$Message.success('修改成功');
                 } else {
                     that.$Message.error('修改失败');
@@ -247,6 +246,9 @@ export default {
                     that.$Message.error('无法获取log记录');
                 }
             });
+        },
+        formatString: function (str) {
+            return '"' + str + '"';
         }
     },
     computed: {

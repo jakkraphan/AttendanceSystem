@@ -110,10 +110,10 @@
                     <Input v-model="dataAdd['user_id']" placeholder="请输入工号" label="员工工号"></Input>                
                 </Form-item>
                 <Form-item label="开始日期">
-                    <DatePicker v-model="dataAdd['begindate']" type="date" placeholder="请选择开始日期" label="开始日期"></DatePicker>
+                    <DatePicker v-model="dataAdd['begintime']" type="date" placeholder="请选择开始日期" label="开始日期"></DatePicker>
                 </Form-item>
                 <Form-item label="结束日期">
-                    <DatePicker v-model="dataAdd['enddate']" type="date" placeholder="请选择结束日期" label="结束日期"></DatePicker>
+                    <DatePicker v-model="dataAdd['endtime']" type="date" placeholder="请选择结束日期" label="结束日期"></DatePicker>
                 </Form-item>
                 <Form-item label="出差类型">              
                     <Select v-model="dataAdd['type']">
@@ -302,7 +302,8 @@ export default {
             };
             this.updateData(obj);
         },
-        addOk: function (data) {
+        addOk: function () {
+            const data = this.dataAdd;
             const obj = {
                 table: 'trip_table',
                 log: 'add_trip',
@@ -322,7 +323,8 @@ export default {
             }
             this.insertData(obj);
         },
-        deleteOk: function (data) {
+        deleteOk: function () {
+            const data = this.dataDelete;
             const that = this;
             const args = {};
             const obj = {

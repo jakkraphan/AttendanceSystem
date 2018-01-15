@@ -105,6 +105,9 @@
                 <Form-item label="部门详情">
                     <Input v-model="dataEdit['department_info']" type="textarea"></Input>
                 </Form-item>
+                <Form-item label="部门主管">
+                    <Input v-model="dataEdit['user_id']"></Input>
+                </Form-item>
             </Form>
         </Modal>
 
@@ -271,25 +274,24 @@ export default {
                 args['info'] = data['information'];
                 args['d_id'] = data['department'];
             }
-            console.log(obj);
             this.$socket.emit('update', obj, function (status) {
                 if (status) {
-                    let need2change;
-                    let pkey;
                     if (that.showSwitch) {
-                        need2change = that.departmentData;
-                        pkey = 'department_number';
-                    } else {
-                        need2change = that.userData;
-                        pkey = 'user_id';
-                    }
-                    need2change.forEach(elem => {
-                        if (elem[pkey] === data[pkey]) {
-                            for (let i in data) {
-                                elem[i] = data[i];
+                        that.$socket.emit('update', {
+                            table: 'manage',
+                            log: 'modify_manage',
+                            key: {
+                                d_id: obj.key.d_id
+                            },
+                            args: {
+                                user_id: data['user_id']
                             }
-                        }
-                    });
+                        }, function (params) {
+                        });
+                        that.fetchDepartment();
+                    } else {
+                        that.fetchUser();
+                    }
                 } else {
                     that.$Message.error('编辑失败');
                 }
@@ -303,6 +305,7 @@ export default {
             };
             if (this.showSwitch) {
                 obj['table'] = 'department';
+                obj['log'] = 'add_department';
                 args['d_name'] = this.departmentDataAdd['department_name'];
                 args['d_info'] = this.departmentDataAdd['department_info'];
             } else {
@@ -316,9 +319,9 @@ export default {
             this.$socket.emit('insert', obj, function (ret) {
                 if (ret) {
                     if (that.showSwitch) {
-                        that.userData.unshift(args);
+                        that.fetchDepartment();
                     } else {
-                        that.departmentData.unshift(args);
+                        that.fetchUser();
                     }
                 } else {
                     that.$Message.error('插入失败');
@@ -340,7 +343,7 @@ export default {
             }
             for (let item of this.dataDelete) {
                 const key = {};
-                key[pkey[0]] = item[pkey[0]];
+                key[pkey[1]] = item[pkey[0]];
                 obj['args'] = key;
                 this.$socket.emit('delete', obj, function (status) {
                     if (status) {
@@ -492,6 +495,7 @@ export default {
                             'department_info': i[2]
                         });
                     }
+                    that.$store.commit('set_departments', args);
                 } else {
                     that.$Message.error('数据获取失败');
                 }
