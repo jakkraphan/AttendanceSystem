@@ -1,5 +1,5 @@
 import pymysql
-from test2 import JsonExtendEncoder
+from utils import JsonExtendEncoder
 import json
 
 class EM(object):
@@ -54,9 +54,11 @@ class EM(object):
                 self.con = Connect("localhost", "root", "123654", "attendance")
                 sql = self.con.select_sql("*", "attendance_table", "user_id =" + str(user_id))
                 if start != -1:
-                    sql = sql + " and date>= " + str(start)
+                    sql = sql + " and m_date>='" + str(start) + "'"
                 if end != -1:
-                    sql = sql + " and date<=" + str(end)
+                    sql = sql + " and m_date<='" + str(end) + "'"
+                sql = sql + " order by m_date DESC"
+                print(sql)
                 results = self.con.select(sql)
                 results=json.loads(json.dumps(results,cls=JsonExtendEncoder))                
                 self.con.close()
@@ -75,14 +77,15 @@ class EM(object):
             sql = self.con.select_sql("*", table, str("user_id =" + str(self.user_id)))
             if self.is_login:
                 if max_days <= -2:
-                    sql = sql + " and (begin_time-end_time)>=" + str(min_days)
+                    sql = sql + " and (end_time-begin_time)>=" + str(min_days)
                 else:
-                    sql = sql + " and (begin_time-end_time)>=" + str(min_days) + " and (begin_time-end_time)<= " + str(
+                    sql = sql + " and (end_time-begin_time)>=" + str(min_days) + " and (end_time-begin_time)<= " + str(
                         max_days)
                 sql = sql + " order by "
                 for index in range(len(k_order)):
                     sql += str(k_order[index] + " " + v_order[index] + ",")
                 sql = sql[:-1]
+                print(sql)
                 results = self.con.select(sql)
                 results=json.loads(json.dumps(results,cls=JsonExtendEncoder))                
                 self.con.close()
@@ -144,9 +147,10 @@ class Manager(EM):
         user_id = json["user_id"]
         password = json["password"]
         self.con = Connect("localhost", "root", "123654", "attendance")
-        sql = "(" + self.con.select_sql("*", "user,manage", "user.user_id = manage.user_id") + ")"
-        result = self.con.select(
-            self.con.select_sql("*", sql, str("user_id = " + user_id + " and " + " password = '" + password + "'")))
+        sql = "(" + self.con.select_sql("user.*", "user,manage", "user.user_id = manage.user_id") + ") as tmp"
+        sql2 = self.con.select_sql("*", sql, str("user_id = " + user_id + " and " + " password = '" + password + "'"))
+        print(sql2)
+        result = self.con.select(sql2)
 
         if len(result) > 0:
             self.is_login = True
@@ -185,6 +189,7 @@ class Manager(EM):
             for index in range(len(k_order)):
                 sql += str(k_order[index] + " " + v_order[index] + ",")
             sql = sql[:-1]
+            print(sql)
             results = self.con.select(sql)
             self.con.close()
             return results
@@ -212,7 +217,7 @@ class Manager(EM):
             self.con = Connect("localhost", "root", "123654", "attendance")
             sql = self.con.select_sql("*", table + ",user ", str(table) + ".user_id =user.user_id")
             if user_id >= 0:
-                sql = sql + " and user_id = " + str(user_id)
+                sql = sql + " and user.user_id = " + str(user_id)
             if name != -1:
                 sql = sql + " and name = '" + str(name) + "'"
             if status != -1:
@@ -220,12 +225,12 @@ class Manager(EM):
             if m_type != -1:
                 sql = sql + " and m_type = " + str(m_type)
             if start != -1:
-                sql = sql + " and begin_time>= " + str(start)
+                sql = sql + " and begin_time>= '" + str(start) + "'"
             if end != -1:
-                sql = sql + " and end_time<= " + str(end)
-            sql = sql + " and (begin_time-end_time)>= " + str(min_days)
-            if max_days <= -2:
-                sql = sql + " and (begin_time-end_time)<= " + str(max_days)
+                sql = sql + " and end_time<= '" + str(end) + "'"
+            sql = sql + " and (end_time-begin_time)>= " + str(min_days)
+            if max_days != -2:
+                sql = sql + " and (end_time-begin_time)<= " + str(max_days)
             if did > 0:
                 sql = sql + " and d_id=" + str(did)
             else:
@@ -234,6 +239,7 @@ class Manager(EM):
             for index in range(len(k_order)):
                 sql += str(k_order[index] + " " + v_order[index] + ",")
             sql = sql[:-1]
+            print(sql)
             results = self.con.select(sql)
             results=json.loads(json.dumps(results,cls=JsonExtendEncoder))            
             self.con.close()
@@ -255,17 +261,17 @@ class Manager(EM):
             k_order = json1["order"][0]
             v_order = json1["order"][1]
             self.con = Connect("localhost", "root", "123654", "attendance")
-            sql = self.con.select_sql("*", "attendance,user ", "attendance.user_id =user.user_id")
+            sql = self.con.select_sql("*", "attendance_table, user ", "attendance_table.user_id = user.user_id")
             if user_id >= 0:
-                sql = sql + " and user_id = " + str(user_id)
+                sql = sql + " and user.user_id = " + str(user_id)
             if name != -1:
                 sql = sql + " and name = '" + str(name) + "'"
             if status != -1:
                 sql = sql + " and status = " + str(status)
             if start != -1:
-                sql = sql + " and m_date>= " + str(start)
+                sql = sql + " and m_date>= '" + str(start) + "'"
             if end != -1:
-                sql = sql + " and m_date<= " + str(end)
+                sql = sql + " and m_date<= '" + str(end) + "'"
             if did > 0:
                 sql = sql + " and d_id=" + str(did)
             else:
@@ -274,8 +280,11 @@ class Manager(EM):
             for index in range(len(k_order)):
                 sql += str(k_order[index] + " " + v_order[index] + ",")
             sql = sql[:-1]
+            print(sql)
             results = self.con.select(sql)
             results=json.loads(json.dumps(results,cls=JsonExtendEncoder))
+            # for x in results
+
             self.con.close()
             return results
 
@@ -289,39 +298,40 @@ class Manager(EM):
             else:
                 did = self.department
             if group == "user":
-                selector = "user_id,d_id,status,count(*) "
-                groupby = " user_id) as user_count(user_id,d_id,status,count)"
+                selector = "user.user_id,d_id,status,count(*) "
+                groupby = " user_id, status) as user_count"
                 # out_selector=""
             elif group == "department":
                 selector = "d_id,status,count(*)"
-                groupby = " d_id) as user_count(d_id,status,count)"
+                groupby = " d_id, status) as user_count"
             else:
                 selector = "status,count(*)"
-                groupby = " status) as user_count(status,count)"
+                groupby = " status) as user_count"
 
             self.con = Connect("localhost", "root", "123654", "attendance")
-            sql = self.con.select_sql(selector, "attendance,user ", "attendance.user_id =user.user_id")
+            sql = self.con.select_sql(selector, "attendance_table,user ", "attendance_table.user_id = user.user_id")
             status = json["status"]
             user_id = json["user_id"]
             name = json["name"]
             start = json["start"]
             end = json["end"]
             if user_id >= 0:
-                sql = sql + " and user_id = " + str(user_id)
+                sql = sql + " and user.user_id = " + str(user_id)
             if name != -1:
                 sql = sql + " and name = '" + str(name) + "'"
             if status != -1:
                 sql = sql + " and status = " + str(status)
             if start != -1:
-                sql = sql + " and m_date>= " + str(start)
+                sql = sql + " and m_date>= '" + str(start) + "'"
             if end != -1:
-                sql = sql + " and m_date<= " + str(end)
+                sql = sql + " and m_date<= '" + str(end) + "'"
             if did > 0:
                 sql = sql + " and d_id=" + str(did)
             else:
                 sql = sql + " and d_id >1"
             sql = "(" + sql + " group by " + groupby
             sql = "select * from " + sql
+            print(sql)
             results = self.con.select(sql)
             self.con.close()
             return results
@@ -332,6 +342,7 @@ class PM(Manager):
         Manager.__init__(self)
 
     def login(self, json):
+        user_id = json["user_id"]
         user_id = json["user_id"]
         password = json["password"]
         self.con = Connect("localhost", "root", "123654", "attendance")
@@ -413,6 +424,18 @@ class SM(PM):  # 设置节假日
             results=json.loads(json.dumps(results,cls=JsonExtendEncoder))
             self.con.close()
             return results
+
+    def check_search(self, data):
+        if self.is_login:
+            self.con = Connect("localhost", "root", "123654", "attendance")
+            sql = self.con.select_sql("*", "check_time", "")
+            sql += "c_date='" + data["c_date"] + "'"
+            print(sql)
+            results = self.con.select(sql)
+            results=json.loads(json.dumps(results,cls=JsonExtendEncoder))
+            self.con.close()
+            return results
+
 
 
 class System(object):  # 三次更新
@@ -629,6 +652,8 @@ class Connect(object):
             sql += (str(x) + " = %s and ")
         sql = sql[:-5]
         values = tuple(c_v + o_v)
+        print(sql, values)
+        
         try:
             self.cursor.execute(sql, values)
             self.db.commit()

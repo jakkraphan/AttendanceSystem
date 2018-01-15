@@ -26,7 +26,7 @@
                         <Row type="flex" justify="end" align="middle" class="user-dropdown-innercon">
                             <Dropdown transfer trigger="click" @on-click="handleClickUserDropdown">
                                 <a href="javascript:void(0)">
-                                    <span class="main-user-name">{{ userName }}</span>
+                                    <span class="main-user-name">{{ name }}</span>
                                     <Icon type="arrow-down-b"></Icon>
                                 </a>
                                 <DropdownMenu slot="list">
@@ -47,8 +47,8 @@
     </div>
 </template>
 <script>
-import Cookies from 'js-cookie';
 import shrinkableMenu from './main-components/shrinkable-menu/shrinkable-menu.vue';
+import {mapGetters} from 'vuex';
 
 export default {
     components: {
@@ -56,19 +56,18 @@ export default {
     },
     data () {
         return {
-            shrink: false,
-            userName: ''
+            shrink: false
         };
     },
     computed: {
         menuList () {
             return this.$store.state.app.menuList;
-        }
+        },
+        ...mapGetters([
+            'name'
+        ])
     },
     methods: {
-        init () {
-            this.userName = Cookies.get('user');
-        },
         toggleClick () {
             this.shrink = !this.shrink;
         },
@@ -82,9 +81,6 @@ export default {
                 });
             }
         }
-    },
-    mounted () {
-        this.init();
     }
 };
 </script>

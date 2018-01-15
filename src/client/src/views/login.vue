@@ -90,6 +90,7 @@ export default {
                     Cookies.set('mode', that.form.type);
                     that.$store.commit('updateMenulist');
                     that.$store.commit('set_all', status);
+                    that.$store.commit('set_type', that.form.type);
                     that.fetchDepartments();
                     that.$router.push({
                         name: 'home_index'

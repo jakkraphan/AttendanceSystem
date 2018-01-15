@@ -1,11 +1,11 @@
 from aiohttp import web
 import socketio
-from test import EM
-from test import Connect
-from test import PM
-from test import Manager
-from test import SM
-from test import System
+from db import EM
+from db import Connect
+from db import PM
+from db import Manager
+from db import SM
+from db import System
 # employee=EM()
 # manager=Manager()
 # personel=PM()
@@ -16,7 +16,6 @@ sio = socketio.AsyncServer()
 app = web.Application()
 login={}
 sio.attach(app)
-
 
 @sio.on('connect', namespace='/db')
 def connect(sid, environ):
@@ -48,6 +47,7 @@ async def message(sid, data):
     if result:
         login[sid]=e
     return result
+
 @sio.on('m_login', namespace='/db')
 async def message(sid, data):
     m = Manager()
@@ -55,6 +55,7 @@ async def message(sid, data):
     if result:
         login[sid] = m
     return result
+
 @sio.on('p_login', namespace='/db')
 async def message(sid, data):
     p = PM()
@@ -62,6 +63,7 @@ async def message(sid, data):
     if result:
         login[sid] = p
     return result
+
 @sio.on('s_login', namespace='/db')
 async def message(sid, data):
     s = SM()
@@ -69,22 +71,27 @@ async def message(sid, data):
     if result:
         login[sid] = s
     return result
+
 @sio.on('change_info', namespace='/db')
 async def message(sid, data):
     if login[sid]:
         return login[sid].change_info(data)
+
 @sio.on('attendance_search', namespace='/db')
 async def message(sid, data):
     if login[sid]:
         return login[sid].attendance_search(data)
+
 @sio.on('tl_search', namespace='/db')
 async def message(sid, data):
     if login[sid]:
         return login[sid].tl_search(data)
+
 @sio.on('e_search', namespace='/db')
 async def message(sid, data):
     if login[sid]:
         return login[sid].e_search(data)
+
 @sio.on('sum_a_search', namespace='/db')
 async def message(sid, data):
     if login[sid]:
@@ -94,11 +101,16 @@ async def message(sid, data):
 async def message(sid, data):
     if login[sid]:
         return login[sid].d_search(data)
+
 @sio.on('log_search', namespace='/db')
 async def message(sid, data):
     if login[sid]:
         return login[sid].log_search(data)
 
+@sio.on('check_search', namespace='/db')
+async def message(sid, data):
+    if login[sid]:
+        return login[sid].check_search(data)
 
 @sio.on('disconnect', namespace='/db')
 def disconnect(sid):

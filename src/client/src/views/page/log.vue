@@ -30,9 +30,9 @@
         title="Edit"
         ok-text="OK"
         cancel-text="Cancel"
-        on-ok="editOk">
+        @on-ok="editOk">
         <Form :label-width="80">
-          <Form-item v-for="(value, key) in dataEdit" :label="convertKey(key)" :key="dataEdit.id">
+          <Form-item v-for="(value, key) in dataEdit" :label="convertKey(key)" :key="dataEdit[key]">
             <Input v-model="dataEdit[key]" :placeholder="'Please enter: ' + key"></Input>
           </Form-item>
         </Form>
@@ -42,7 +42,7 @@
         title="Add"
         ok-text="OK"
         cancel-text="Cancel"
-        on-ok="addOk">
+        @on-ok="addOk">
         <Form :label-width="80">
           <Form-item v-for="item in logColumns" :label="item.title" :key="item.id">
             <Input v-model="dataAdd[item.key]" :placeholder="'Please enter: ' + item.title"></Input>
@@ -54,13 +54,15 @@
         title="Delete"
         ok-text="OK"
         cancel-text="Cancel"
-        on-ok="deleteOk">
+        @on-ok="deleteOk">
         Are you sure to delete this data?
     </Modal>
   </Row>
 </template>
 
 <script>
+import Util from '../../libs/util';
+
 export default {
     name: 'log',
     data () {
@@ -96,10 +98,64 @@ export default {
     },
     methods: {
         editOk: function () {
+            const that = this;
+            const obj = {
+                table: 'log',
+                log: 'modify_log',
+                key: {
+                    user_id: this.dataEdit['user_id'],
+                    l_time: Util.formatDateTime(new Date(this.dataEdit['datetime']))
+                },
+                args: {
+                    info: this.dataEdit['info']
+                }
+            };
+            this.$socket.emit('update', obj, function (status) {
+                if (status) {
+                    console.log(status)
+                    that.$Message.success('修改成功');
+                } else {
+                    that.$Message.error('修改失败');
+                }
+            });
         },
         addOk: function () {
+            const that = this;
+            const obj = {
+                table: 'log',
+                log: 'add_log',
+                args: {
+                    user_id: this.dataAdd['user_id'],
+                    info: this.dataAdd['info'],
+                    l_time: this.dataAdd['datetime']
+                }
+            };
+            this.$socket.emit('insert', obj, function (status) {
+                if (status) {
+                    that.$Message.success('插入成功');
+                } else {
+                    that.$Message.error('插入失败');
+                }
+            });
         },
         deleteOk: function () {
+            const that = this;
+            const obj = {
+                table: 'log',
+                log: 'del_log',
+                key: {}
+            };
+            for (let item of this.dataDelete) {
+                obj.key.user_id = item.user_id;
+                obj.key.l_time = item.datetime;
+                this.$socket.emit('delete', obj, function (status) {
+                    if (status) {
+                        that.$Message.success('删除成功');
+                    } else {
+                        that.$Message.error('删除成功');
+                    }
+                });
+            }
         },
         pageChange: function (page) {
             this.currentPage = page;
@@ -175,6 +231,22 @@ export default {
                 }
             });
             return returnValue;
+        },
+        fetchData: function (obj) {
+            const that = this;
+            this.$socket.emit('log_search', obj, function (...args) {
+                if (args !== undefined) {
+                    for (let i of args[0]) {
+                        that.logData.push({
+                            'user_id': i[0],
+                            'info': i[1],
+                            'datetime': i[2]
+                        });
+                    }
+                } else {
+                    that.$Message.error('无法获取log记录');
+                }
+            });
         }
     },
     computed: {
@@ -204,24 +276,11 @@ export default {
         }
     },
     mounted: function () {
-        const that = this;
         const obj = {
             'user_id': -1,
             'order': [['user_id'], ['ASC']]
         };
-        this.$socket.emit('log_search', obj, function (...args) {
-            if (args !== undefined) {
-                for (let i of args[0]) {
-                    that.logData.push({
-                        'user_id': i[0],
-                        'info': i[1],
-                        'datetime': i[2]
-                    });
-                }
-            } else {
-                that.$Message.error('无法获取log记录');
-            }
-        });
+        this.fetchData(obj);
         this.dataShow = this.logData.slice(0, this.showNum);
     }
 };

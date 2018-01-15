@@ -1,7 +1,8 @@
 import json
 from datetime import date
 from datetime import datetime
-
+from datetime import timedelta
+from datetime import time
 
 class JsonExtendEncoder(json.JSONEncoder):
     def default(self, o):
@@ -9,6 +10,9 @@ class JsonExtendEncoder(json.JSONEncoder):
             return o.strftime('%Y-%m-%d %H:%M:%S')
         elif isinstance(o, date):
             return o.strftime('%Y-%m-%d')
+        elif isinstance(o, timedelta):
+            a=datetime(2000,1,1,0,0,0)+o
+            return a.strftime('%H:%M:%S')
         else:
             return json.JSONEncoder.default(self, o)
 

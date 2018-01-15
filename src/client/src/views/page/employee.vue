@@ -271,6 +271,7 @@ export default {
                 args['info'] = data['information'];
                 args['d_id'] = data['department'];
             }
+            console.log(obj);
             this.$socket.emit('update', obj, function (status) {
                 if (status) {
                     let need2change;

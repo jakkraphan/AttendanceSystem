@@ -257,4 +257,35 @@ util.checkStatus = function (userId) {
     return Cookies.get('user') !== userId;
 };
 
+util.formatDate = function (date) {
+    const y = date.getFullYear();
+    let m = date.getMonth() + 1;
+    m = m < 10 ? '0' + m : m;
+    let d = date.getDate();
+    d = d < 10 ? ('0' + d) : d;
+    return y + '-' + m + '-' + d;
+};
+
+util.formatTime = function (date) {
+    let h = date.getHours();
+    h = h < 10 ? '0' + h : h;
+    let m = date.getMinutes();
+    m = m < 10 ? '0' + m : m;
+    let s = date.getSeconds();
+    s = s < 10 ? '0' + s : s;
+    return h + ':' + m + ':' + s;
+};
+
+util.formatDateTime = function (date) {
+    const fDate = util.formatDate(date);
+    const fTime = util.formatTime(date);
+    return '"' + fDate + ' ' + fTime + '"';
+};
+
+util.checkDate = function (date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate();
+};
+
 export default util;

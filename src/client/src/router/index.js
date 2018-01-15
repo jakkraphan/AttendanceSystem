@@ -13,6 +13,8 @@ const RouterConfig = {
     routes: routers
 };
 
+// const whiteList = ['setting', 'attendance', 'leave', 'trip'];
+
 export const router = new VueRouter(RouterConfig);
 
 router.beforeEach((to, from, next) => {

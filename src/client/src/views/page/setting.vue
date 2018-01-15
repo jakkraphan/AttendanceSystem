@@ -4,7 +4,7 @@
             <p slot="title">
                 <span v-if="showSwitch"><Icon type="ionic"></Icon> 系统设置 </span>
                 <span v-else><Icon type="person"></Icon> 个人设置 </span>         
-                <span v-if="this.type >= 4">
+                <span v-if="type >= 4">
                     <i-switch v-model="showSwitch" size="small"  style="margin: 0 10px 0 10px"></i-switch> 切换
                 </span>
             </p>
@@ -13,13 +13,13 @@
                     :label-width="100"
                     label-positon="right">
                     <FormItem label="选择日期：">
-                        <Date-picker type="date" v-model="date.date" placeholder="选择日期" style="width: 200px"></Date-picker>
+                        <Date-picker type="date" v-model="c_date" placeholder="选择日期" style="width: 200px"></Date-picker>
                     </FormItem>
                     <FormItem label="签到时间：">
-                        <Time-picker type="time" v-model="date.begintime" placeholder="选择时间" style="width: 200px"></Time-picker>
+                        <Time-picker type="time" v-model="begintime" placeholder="选择时间" style="width: 200px"></Time-picker>
                     </FormItem>
                     <FormItem label="签退时间：">
-                        <Time-picker type="time" v-model="date.endtime" placeholder="选择时间" style="width: 200px"></Time-picker>
+                        <Time-picker type="time" v-model="endtime" placeholder="选择时间" style="width: 200px"></Time-picker>
                     </FormItem>
                     <FormItem label="确认保存：">
                         <Button type="primary" style="width: 99px;" :loading="save_loading" @click="saveTime">保存</Button>
@@ -80,6 +80,7 @@
 
 <<script>
     import { mapGetters } from 'vuex';
+    import Util from '../../libs/util';
     
     export default {
         name: 'setting',
@@ -96,11 +97,10 @@
                 save_loading: false,
                 editPasswordModal: false, // 修改密码模态框显示
                 savePassLoading: false,
-                date: {
-                    date: '',
-                    begintime: '',
-                    endtime: ''
-                },
+                c_date: '',
+                begintime: '',
+                endtime: '',
+                isUpdateTime: false,
                 oldname: this.$store.getters.name,
                 oldinfo: this.$store.getters.information,
                 name: this.$store.getters.name,
@@ -128,14 +128,6 @@
             };
         },
         methods: {
-            formatDate (date) {
-                const y = date.getFullYear();
-                let m = date.getMonth() + 1;
-                m = m < 10 ? '0' + m : m;
-                let d = date.getDate();
-                d = d < 10 ? ('0' + d) : d;
-                return y + '-' + m + '-' + d;
-            },
             showEditPassword () {
                 this.editPasswordModal = true;
             },
@@ -164,11 +156,27 @@
                 this.information = this.oldinfo;
             },
             saveTime () {
+                const obj = {
+                    'table': 'check_time',
+                    'args': {
+                        'check_in_time': Util.formatTime(this.begintime),
+                        'check_out_time': Util.formatTime(this.endtime)
+                    }
+                };
+                if (this.isUpdateTime) {
+                    obj['log'] = 'modify_time';
+                    obj['key'] = { 'c_date': Util.formatDate(this.c_date) };
+                    this.updateCheckDate(obj);
+                } else {
+                    obj['log'] = 'add_time';
+                    obj['args']['c_date'] = Util.formatDate(this.c_date);
+                    this.insertCheckDate(obj);
+                }
             },
             cancelTime () {
-                this.date.date = '';
-                this.date.begintime = '';
-                this.date.endtime = '';
+                this.c_date = '';
+                this.begintime = '';
+                this.endtime = '';
             },
             update (data) {
                 const that = this;
@@ -184,6 +192,37 @@
                         that.$Message.error('更改出错');
                     }
                 });
+            },
+            fetchCheckDate (data) {
+                const that = this;
+                this.$socket.emit('check_search', data, function (data) {
+                    if (data !== undefined && data.length >= 1) {
+                        that.isUpdateTime = true;
+                        that.begintime = data[0][1];
+                        that.endtime = data[0][2];
+                    } else {
+                        that.isUpdateTime = false;
+                        that.begintime = '';
+                        that.endtime = '';
+                    }
+                });
+            },
+            updateCheckDate (data) {
+                this.modifyCheckDate(data, 'update');
+            },
+            insertCheckDate (data) {
+                this.modifyCheckDate(data, 'insert');
+            },
+            modifyCheckDate (data, methodName) {
+                const that = this;
+                this.$socket.emit(methodName, data, function (ret) {
+                    if (ret) {
+                        that.begintime = data['args']['check_in_time'];
+                        that.endtime = data['args']['check_out_time'];
+                    } else {
+                        that.$Message.error('修改失败');
+                    }
+                });
             }
         },
         computed: {
@@ -193,6 +232,21 @@
                 'department',
                 'departments'
             ])
+        },
+        mounted: function () {
+            if (this.type >= 4) {
+                const today = new Date();
+                this.c_date = today;
+                today.setDate(today.getDate() + 1);
+                this.fetchCheckDate({'c_date': Util.formatDate(today)});
+            }
+        },
+        watch: {
+            c_date: function () {
+                if (this.c_date !== '') {
+                    this.fetchCheckDate({'c_date': Util.formatDate(this.c_date)});
+                }
+            }
         }
     };
 </script>
